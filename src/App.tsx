@@ -1541,9 +1541,9 @@ function MainPage() {
                 className="relative w-full max-w-lg aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-2xl border-[8px] border-white/50 backdrop-blur-sm"
               >
                 <img 
-                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80" 
+                  src="/ceylin.png" 
                   alt="Eğitim ve Danışmanlık" 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover object-[center_42%]"
                   loading="eager"
                   referrerPolicy="no-referrer"
                 />
