@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Phone,
   MessageSquare,
+  MapPin,
   ChevronUp,
   Download,
   Eye,
@@ -41,7 +42,9 @@ const CONTACT_TOPIC_KEY = 'sca_contact_topic';
 interface UIContextType {
   contactTopic: string;
   setContactTopic: (topic: string) => void;
+  isContactOpen: boolean;
   openContact: (topic?: string) => void;
+  closeContact: () => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -332,10 +335,7 @@ const EducationDetailPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const area = educationAreas.find(a => a.slug === slug);
-  const goToContact = (topic?: string) => {
-    if (topic) sessionStorage.setItem(CONTACT_TOPIC_KEY, topic);
-    navigate('/#iletisim');
-  };
+  const { openContact } = useUI();
   const contactTopicForArea = area?.title === "Bireysel Danışmanlık"
     ? "Bireysel Psikolojik Danışmanlık"
     : area?.title === "Ebeveyn Danışmanlık"
@@ -373,7 +373,7 @@ const EducationDetailPage = () => {
               <Instagram size={24} />
             </a>
             <button 
-              onClick={() => goToContact(contactTopicForArea)}
+              onClick={() => openContact(contactTopicForArea)}
               className="bg-burgundy text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-navy-900 transition-all shadow-lg shadow-burgundy/20"
             >
               İletişime Geç
@@ -403,7 +403,7 @@ const EducationDetailPage = () => {
               </p>
               <div className="flex flex-wrap gap-4">
                 <button 
-                  onClick={() => goToContact(contactTopicForArea)}
+                  onClick={() => openContact(contactTopicForArea)}
                   className="bg-navy-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-burgundy transition-all shadow-xl active:scale-95"
                 >
                   İletişime Geç
@@ -479,7 +479,7 @@ const EducationDetailPage = () => {
                     Bu hizmetimiz hakkında daha detaylı bilgi almak için bize ulaşın.
                   </p>
                   <button 
-                    onClick={() => goToContact(contactTopicForArea)}
+                    onClick={() => openContact(contactTopicForArea)}
                     className="w-full bg-burgundy text-white py-4 rounded-2xl font-bold hover:bg-white hover:text-navy-900 transition-all shadow-xl"
                   >
                     İletişim Formu
@@ -523,7 +523,7 @@ const EducationDetailPage = () => {
             Size en uygun gelişim yolculuğunu belirlemek için uzmanlarımızla iletişime geçebilirsiniz.
           </p>
           <button 
-            onClick={() => goToContact(contactTopicForArea)}
+                    onClick={() => openContact(contactTopicForArea)}
             className="bg-white text-navy-900 px-12 py-5 rounded-2xl font-bold text-lg hover:bg-burgundy hover:text-white transition-all shadow-2xl active:scale-95"
           >
             İletişim Formunu Doldur
@@ -540,10 +540,7 @@ const MaterialDetailPage = () => {
   const material = materials.find(m => m.slug === slug);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [readingMode, setReadingMode] = useState<'light' | 'sepia' | 'dark'>('light');
-  const goToContact = (topic?: string) => {
-    if (topic) sessionStorage.setItem(CONTACT_TOPIC_KEY, topic);
-    navigate('/#iletisim');
-  };
+  const { openContact } = useUI();
 
   const currentIndex = materials.findIndex(m => m.slug === slug);
   const nextMaterial = materials[(currentIndex + 1) % materials.length];
@@ -750,7 +747,7 @@ const MaterialDetailPage = () => {
                 
                 <button 
                   className="bg-burgundy text-white px-10 py-5 rounded-2xl font-bold flex items-center gap-3 hover:bg-navy-900 transition-all shadow-xl active:scale-95"
-                  onClick={() => goToContact()}
+                  onClick={() => openContact()}
                 >
                   <MessageSquare size={20} />
                   İletişime Geç
@@ -855,19 +852,194 @@ const FaqItem = ({ question, answer }: { question: string, answer: string }) => 
   );
 };
 
+const ContactInfoPanel = ({ showMap = false }: { showMap?: boolean }) => (
+  <div className="space-y-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+        <Phone className="mt-0.5 flex-shrink-0 text-burgundy" size={20} />
+        <div>
+          <div className="text-sm font-bold text-navy-900 mb-1">Telefon</div>
+          <a href="tel:+902584088840" className="text-slate-600 hover:text-burgundy transition-colors">
+            0 (258) 408 88 40
+          </a>
+        </div>
+      </div>
+      <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+        <Clock className="mt-0.5 flex-shrink-0 text-burgundy" size={20} />
+        <div>
+          <div className="text-sm font-bold text-navy-900 mb-1">Çalışma Saatleri</div>
+          <div className="text-slate-600 text-sm">Haftanın Her Günü: 10:00 - 19:00</div>
+        </div>
+      </div>
+    </div>
+    <div className="flex items-start gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+      <MapPin className="mt-0.5 flex-shrink-0 text-burgundy" size={20} />
+      <div>
+        <div className="text-sm font-bold text-navy-900 mb-1">Adres</div>
+        <div className="text-slate-600 text-sm leading-relaxed">
+          Kınıklı Mahallesi, 6018 Sokak, No: 5, Kat: 3<br />
+          Pamukkale / Denizli
+        </div>
+      </div>
+    </div>
+    {showMap && (
+      <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+        <iframe
+          src="https://maps.google.com/maps?q=K%C4%B1n%C4%B1kl%C4%B1%20Mahallesi,%206018%20Sokak,%20No:%205,%20Pamukkale%20/%20Denizli&t=&z=15&ie=UTF8&iwloc=&output=embed"
+          width="100%"
+          height="180"
+          style={{ border: 0 }}
+          allowFullScreen
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          className="w-full"
+          title="SCA Eğitim Danışmanlık Konum"
+        />
+      </div>
+    )}
+  </div>
+);
+
+const ContactForm = ({
+  contactTopic,
+  setContactTopic,
+  onSuccess,
+}: {
+  contactTopic: string;
+  setContactTopic: (topic: string) => void;
+  onSuccess?: () => void;
+}) => {
+  const [contactState, handleContactSubmit] = useForm('mgopjdzv');
+
+  useEffect(() => {
+    if (contactState.succeeded) {
+      alert("Mesajınız başarıyla iletildi!");
+      setContactTopic("");
+      onSuccess?.();
+    }
+  }, [contactState.succeeded, setContactTopic, onSuccess]);
+
+  return (
+    <form className="space-y-5" onSubmit={handleContactSubmit}>
+      <input type="hidden" name="form_type" value="Genel İletişim" />
+      <div className="space-y-2">
+        <label className="text-sm font-bold text-navy-900 ml-1">Konu</label>
+        <select
+          name="subject"
+          value={contactTopic}
+          onChange={(e) => setContactTopic(e.target.value)}
+          className="w-full bg-white border border-slate-200 rounded-2xl py-3.5 px-5 focus:outline-none focus:ring-2 focus:ring-burgundy/50 transition-all text-slate-800"
+        >
+          <option value="">Konu seçiniz (isteğe bağlı)</option>
+          <optgroup label="Danışmanlık Hizmetleri">
+            <option value="Bireysel Psikolojik Danışmanlık">Bireysel Psikolojik Danışmanlık</option>
+            <option value="Çocuk ve Ergen Psikolojik Danışmanlık">Çocuk ve Ergen Psikolojik Danışmanlık</option>
+            <option value="Ebeveyn Danışmanlık">Ebeveyn Danışmanlık</option>
+            <option value="Eğitim Danışmanlık">Eğitim Danışmanlık</option>
+          </optgroup>
+          <optgroup label="Eğitim Programları">
+            {trainings.map((t) => (
+              <option key={t.title} value={`Eğitim: ${t.title}`}>{t.title}</option>
+            ))}
+          </optgroup>
+        </select>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-navy-900 ml-1">Ad Soyad</label>
+          <input name="name" required type="text" className="w-full bg-white border border-slate-200 rounded-2xl py-3.5 px-5 focus:outline-none focus:ring-2 focus:ring-burgundy/50 transition-all text-slate-800" placeholder="Adınız Soyadınız" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-navy-900 ml-1">Telefon</label>
+          <input name="phone" required type="tel" className="w-full bg-white border border-slate-200 rounded-2xl py-3.5 px-5 focus:outline-none focus:ring-2 focus:ring-burgundy/50 transition-all text-slate-800" placeholder="05xx xxx xx xx" />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <label className="text-sm font-bold text-navy-900 ml-1">E-posta</label>
+        <input name="email" required type="email" className="w-full bg-white border border-slate-200 rounded-2xl py-3.5 px-5 focus:outline-none focus:ring-2 focus:ring-burgundy/50 transition-all text-slate-800" placeholder="example@mail.com" />
+      </div>
+      <div className="space-y-2">
+        <label className="text-sm font-bold text-navy-900 ml-1">Mesajınız</label>
+        <textarea name="message" required className="w-full bg-white border border-slate-200 rounded-2xl py-3.5 px-5 h-28 focus:outline-none focus:ring-2 focus:ring-burgundy/50 transition-all resize-none text-slate-800" placeholder="Sorularınızı buraya yazabilirsiniz..." />
+      </div>
+      <button type="submit" disabled={contactState.submitting} className="w-full bg-burgundy text-white py-4 rounded-2xl font-bold text-lg hover:bg-navy-900 transition-all shadow-xl active:scale-95 disabled:opacity-70">
+        {contactState.submitting ? 'Gönderiliyor...' : 'Mesajı Gönder'}
+      </button>
+    </form>
+  );
+};
+
+const ContactModal = () => {
+  const { isContactOpen, closeContact, contactTopic, setContactTopic } = useUI();
+
+  return (
+    <AnimatePresence>
+      {isContactOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closeContact}
+            className="absolute inset-0 bg-navy-900/60 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-2xl bg-white rounded-[32px] shadow-2xl overflow-y-auto max-h-[90vh]"
+          >
+            <div className="p-6 sm:p-10">
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-navy-900 mb-2">İletişime Geç</h2>
+                  <p className="text-slate-500">İletişim bilgilerimiz ve mesaj formu aşağıdadır.</p>
+                </div>
+                <button
+                  onClick={closeContact}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0"
+                  aria-label="Kapat"
+                >
+                  <X size={24} className="text-slate-400" />
+                </button>
+              </div>
+
+              <ContactInfoPanel showMap />
+
+              <div className="mt-8 pt-8 border-t border-slate-100">
+                <h3 className="text-xl font-bold text-navy-900 mb-6">Bize Mesaj Gönderin</h3>
+                <ContactForm
+                  contactTopic={contactTopic}
+                  setContactTopic={setContactTopic}
+                  onSuccess={closeContact}
+                />
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export default function App() {
   const [contactTopic, setContactTopic] = useState("");
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
   const openContact = (topic?: string) => {
     if (topic) setContactTopic(topic);
-    document.getElementById("iletisim")?.scrollIntoView({ behavior: "smooth" });
+    setIsContactOpen(true);
   };
+
+  const closeContact = () => setIsContactOpen(false);
 
   return (
     <UIContext.Provider value={{
       contactTopic,
       setContactTopic,
+      isContactOpen,
       openContact,
+      closeContact,
     }}>
       <Router>
         <Routes>
@@ -875,6 +1047,7 @@ export default function App() {
           <Route path="/materyal/:slug" element={<MaterialDetailPage />} />
           <Route path="/egitim/:slug" element={<EducationDetailPage />} />
         </Routes>
+        <ContactModal />
       </Router>
     </UIContext.Provider>
   );
@@ -892,15 +1065,13 @@ function MainPage() {
   useEffect(() => {
     const storedTopic = sessionStorage.getItem(CONTACT_TOPIC_KEY);
     if (storedTopic) {
-      setContactTopic(storedTopic);
       sessionStorage.removeItem(CONTACT_TOPIC_KEY);
+      openContact(storedTopic);
+    } else if (window.location.hash === '#iletisim') {
+      openContact();
+      window.history.replaceState(null, '', window.location.pathname);
     }
-    if (window.location.hash === '#iletisim') {
-      setTimeout(() => {
-        document.getElementById('iletisim')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    }
-  }, [setContactTopic]);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -936,15 +1107,6 @@ function MainPage() {
       }
     }
   };
-
-  const [contactState, handleContactSubmit] = useForm('mgopjdzv');
-
-  useEffect(() => {
-    if (contactState.succeeded) {
-      alert("Mesajınız başarıyla iletildi!");
-      setContactTopic("");
-    }
-  }, [contactState.succeeded, setContactTopic]);
 
   return (
     <div className="min-h-screen bg-white selection:bg-navy-700 selection:text-white">
@@ -986,10 +1148,10 @@ function MainPage() {
               </a>
               <button 
                 onClick={() => openContact()}
-                className="hidden md:flex items-center gap-2 text-burgundy hover:text-navy-900 transition-colors font-serif"
+                className="flex items-center gap-2 bg-burgundy text-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm hover:bg-navy-900 transition-all shadow-sm shadow-burgundy/20"
               >
-                <Mail size={20} />
-                <span>İletişim</span>
+                <Mail size={16} />
+                <span>İletişime Geç</span>
               </button>
             </div>
           </div>
@@ -1001,9 +1163,13 @@ function MainPage() {
             <a href="#" className="bg-burgundy text-white px-6 py-3 transition-colors">Ana Sayfa</a>
             <div className="w-px h-5 bg-slate-300 mx-2"></div>
             
-            <a href="#iletisim" className="text-slate-700 hover:text-burgundy px-4 py-3 transition-colors">
+            <button
+              type="button"
+              onClick={() => openContact("Bireysel Psikolojik Danışmanlık")}
+              className="text-slate-700 hover:text-burgundy px-4 py-3 transition-colors"
+            >
               Psikolojik Danışmanlık
-            </a>
+            </button>
             <div className="w-px h-5 bg-slate-300 mx-2"></div>
             
             {/* Dropdown Menu */}
@@ -1051,7 +1217,13 @@ function MainPage() {
             <a href="#materyaller" className="text-slate-700 hover:text-burgundy px-4 py-3 transition-colors">Materyaller</a>
             <div className="w-px h-5 bg-slate-300 mx-2"></div>
             
-            <a href="#iletisim" className="text-slate-700 hover:text-burgundy px-4 py-3 transition-colors">İletişim</a>
+            <button
+              type="button"
+              onClick={() => openContact()}
+              className="text-slate-700 hover:text-burgundy px-4 py-3 transition-colors"
+            >
+              İletişim
+            </button>
           </div>
         </div>
 
@@ -1084,13 +1256,16 @@ function MainPage() {
                   Ana Sayfa
                 </a>
                 
-                <a 
-                  href="#iletisim" 
-                  className="block text-lg font-bold text-navy-900 hover:text-burgundy transition-colors" 
-                  onClick={() => setIsMenuOpen(false)}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    openContact();
+                  }}
+                  className="block w-full text-left text-lg font-bold text-navy-900 hover:text-burgundy transition-colors"
                 >
                   İletişim Formu
-                </a>
+                </button>
 
                 <div className="space-y-2">
                   <button 
@@ -1142,13 +1317,16 @@ function MainPage() {
                   Materyaller
                 </a>
                 
-                <a 
-                  href="#iletisim" 
-                  className="block text-lg font-bold text-navy-900 hover:text-burgundy transition-colors" 
-                  onClick={() => setIsMenuOpen(false)}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    openContact();
+                  }}
+                  className="block text-lg font-bold text-navy-900 hover:text-burgundy transition-colors text-left w-full"
                 >
                   İletişim
-                </a>
+                </button>
 
                 <div className="pt-8 border-t border-slate-100 flex items-center justify-center">
                   <a 
@@ -1164,14 +1342,17 @@ function MainPage() {
               </div>
 
               <div className="p-8 bg-slate-50 border-t border-slate-100">
-                <a 
-                  href="#iletisim"
-                  onClick={() => setIsMenuOpen(false)}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    openContact();
+                  }}
                   className="w-full bg-burgundy text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-burgundy/20 flex items-center justify-center gap-2"
                 >
                   <Mail size={20} />
-                  <span>İletişim Formu</span>
-                </a>
+                  <span>İletişime Geç</span>
+                </button>
               </div>
             </motion.div>
           )}
@@ -1725,7 +1906,7 @@ function MainPage() {
                   <ul className="space-y-4 text-slate-600 text-lg">
                     <li><a href="#hizmetler" className="hover:text-burgundy transition-colors">Hizmetler</a></li>
                     <li><a href="#materyaller" className="hover:text-burgundy transition-colors">Materyaller</a></li>
-                    <li><a href="#iletisim" className="hover:text-burgundy transition-colors">İletişim Formu</a></li>
+                    <li><button type="button" onClick={() => openContact()} className="hover:text-burgundy transition-colors text-left">İletişim Formu</button></li>
                   </ul>
                 </div>
                 <div>
@@ -1778,52 +1959,7 @@ function MainPage() {
             {/* Right Column: Contact Form */}
             <div className="bg-slate-50 p-8 md:p-12 rounded-[40px] border border-slate-200">
               <h4 className="text-2xl font-bold mb-8 text-navy-900">Bize Mesaj Gönderin</h4>
-              <form className="space-y-6" onSubmit={handleContactSubmit}>
-                <input type="hidden" name="form_type" value="Genel İletişim" />
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-navy-900 ml-1">Konu</label>
-                  <select
-                    name="subject"
-                    value={contactTopic}
-                    onChange={(e) => setContactTopic(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-burgundy/50 transition-all text-slate-800"
-                  >
-                    <option value="">Konu seçiniz (isteğe bağlı)</option>
-                    <optgroup label="Danışmanlık Hizmetleri">
-                      <option value="Bireysel Psikolojik Danışmanlık">Bireysel Psikolojik Danışmanlık</option>
-                      <option value="Çocuk ve Ergen Psikolojik Danışmanlık">Çocuk ve Ergen Psikolojik Danışmanlık</option>
-                      <option value="Ebeveyn Danışmanlık">Ebeveyn Danışmanlık</option>
-                      <option value="Eğitim Danışmanlık">Eğitim Danışmanlık</option>
-                    </optgroup>
-                    <optgroup label="Eğitim Programları">
-                      {trainings.map((t) => (
-                        <option key={t.title} value={`Eğitim: ${t.title}`}>{t.title}</option>
-                      ))}
-                    </optgroup>
-                  </select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-navy-900 ml-1">Ad Soyad</label>
-                    <input name="name" required type="text" className="w-full bg-white border border-slate-200 rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-burgundy/50 transition-all text-slate-800" placeholder="Adınız Soyadınız" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-navy-900 ml-1">Telefon</label>
-                    <input name="phone" required type="tel" className="w-full bg-white border border-slate-200 rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-burgundy/50 transition-all text-slate-800" placeholder="05xx xxx xx xx" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-navy-900 ml-1">E-posta</label>
-                  <input name="email" required type="email" className="w-full bg-white border border-slate-200 rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-burgundy/50 transition-all text-slate-800" placeholder="example@mail.com" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-navy-900 ml-1">Mesajınız</label>
-                  <textarea name="message" required className="w-full bg-white border border-slate-200 rounded-2xl py-4 px-6 h-32 focus:outline-none focus:ring-2 focus:ring-burgundy/50 transition-all resize-none text-slate-800" placeholder="Sorularınızı buraya yazabilirsiniz..."></textarea>
-                </div>
-                <button type="submit" disabled={contactState.submitting} className="w-full bg-burgundy text-white py-5 rounded-2xl font-bold text-lg hover:bg-navy-900 transition-all shadow-xl active:scale-95 disabled:opacity-70">
-                  {contactState.submitting ? 'Gönderiliyor...' : 'Mesajı Gönder'}
-                </button>
-              </form>
+              <ContactForm contactTopic={contactTopic} setContactTopic={setContactTopic} />
             </div>
           </div>
           
