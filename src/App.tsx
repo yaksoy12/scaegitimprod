@@ -18,9 +18,7 @@ import {
   X,
   ChevronDown,
   Phone,
-  User,
   MessageSquare,
-  Calendar,
   ChevronUp,
   Download,
   Eye,
@@ -35,19 +33,15 @@ import {
   Minus,
   Clock
 } from "lucide-react";
-import { useState, useEffect, FormEvent, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 
-// Context for global UI states like modals
+const CONTACT_TOPIC_KEY = 'sca_contact_topic';
+
+// Context for global UI states
 interface UIContextType {
-  isAppointmentOpen: boolean;
-  setIsAppointmentOpen: (open: boolean, defaultService?: string) => void;
-  selectedTraining: Training | null;
-  setSelectedTraining: (training: Training | null) => void;
-  selectedDate: Date | undefined;
-  setSelectedDate: (date: Date | undefined) => void;
-  selectedTime: string | null;
-  setSelectedTime: (time: string | null) => void;
-  defaultService: string;
+  contactTopic: string;
+  setContactTopic: (topic: string) => void;
+  openContact: (topic?: string) => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -57,11 +51,7 @@ export const useUI = () => {
   if (!context) throw new Error('useUI must be used within a UIProvider');
   return context;
 };
-import { useForm, ValidationError } from '@formspree/react';
-import { DayPicker } from 'react-day-picker';
-import { format, addDays, isBefore, startOfDay } from 'date-fns';
-import { tr } from 'date-fns/locale';
-import 'react-day-picker/dist/style.css';
+import { useForm } from '@formspree/react';
 
 interface Training {
   title: string;
@@ -342,7 +332,15 @@ const EducationDetailPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const area = educationAreas.find(a => a.slug === slug);
-  const { setIsAppointmentOpen } = useUI();
+  const goToContact = (topic?: string) => {
+    if (topic) sessionStorage.setItem(CONTACT_TOPIC_KEY, topic);
+    navigate('/#iletisim');
+  };
+  const contactTopicForArea = area?.title === "Bireysel Danışmanlık"
+    ? "Bireysel Psikolojik Danışmanlık"
+    : area?.title === "Ebeveyn Danışmanlık"
+      ? "Ebeveyn Danışmanlık"
+      : "Eğitim Danışmanlık";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -375,10 +373,10 @@ const EducationDetailPage = () => {
               <Instagram size={24} />
             </a>
             <button 
-              onClick={() => setIsAppointmentOpen(true, area.title === "Bireysel Danışmanlık" ? "Bireysel Psikolojik Danışmanlık" : area.title === "Ebeveyn Danışmanlık" ? "Ebeveyn Danışmanlık" : "Eğitim Danışmanlık")}
+              onClick={() => goToContact(contactTopicForArea)}
               className="bg-burgundy text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-navy-900 transition-all shadow-lg shadow-burgundy/20"
             >
-              Randevu Al
+              İletişime Geç
             </button>
           </div>
         </div>
@@ -405,10 +403,10 @@ const EducationDetailPage = () => {
               </p>
               <div className="flex flex-wrap gap-4">
                 <button 
-                  onClick={() => setIsAppointmentOpen(true, area.title === "Bireysel Danışmanlık" ? "Bireysel Psikolojik Danışmanlık" : area.title === "Ebeveyn Danışmanlık" ? "Ebeveyn Danışmanlık" : "Eğitim Danışmanlık")}
+                  onClick={() => goToContact(contactTopicForArea)}
                   className="bg-navy-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-burgundy transition-all shadow-xl active:scale-95"
                 >
-                  Hemen Başlayın
+                  İletişime Geç
                 </button>
               </div>
             </motion.div>
@@ -478,13 +476,13 @@ const EducationDetailPage = () => {
                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
                   <h3 className="text-2xl font-bold mb-6 relative z-10">Bilgi Alın</h3>
                   <p className="text-white/70 mb-8 relative z-10">
-                    Bu hizmetimiz hakkında daha detaylı bilgi almak veya randevu oluşturmak için bize ulaşın.
+                    Bu hizmetimiz hakkında daha detaylı bilgi almak için bize ulaşın.
                   </p>
                   <button 
-                    onClick={() => setIsAppointmentOpen(true)}
+                    onClick={() => goToContact(contactTopicForArea)}
                     className="w-full bg-burgundy text-white py-4 rounded-2xl font-bold hover:bg-white hover:text-navy-900 transition-all shadow-xl"
                   >
-                    Randevu Talebi
+                    İletişim Formu
                   </button>
                 </div>
 
@@ -522,13 +520,13 @@ const EducationDetailPage = () => {
             Geleceğinizi Birlikte <span className="italic text-burgundy">İnşa Edelim</span>
           </h2>
           <p className="text-white/70 text-lg mb-12 leading-relaxed">
-            Size en uygun gelişim yolculuğunu belirlemek için uzmanlarımızla bir ön görüşme yapabilirsiniz.
+            Size en uygun gelişim yolculuğunu belirlemek için uzmanlarımızla iletişime geçebilirsiniz.
           </p>
           <button 
-            onClick={() => setIsAppointmentOpen(true)}
+            onClick={() => goToContact(contactTopicForArea)}
             className="bg-white text-navy-900 px-12 py-5 rounded-2xl font-bold text-lg hover:bg-burgundy hover:text-white transition-all shadow-2xl active:scale-95"
           >
-            Ücretsiz Ön Görüşme Randevusu
+            İletişim Formunu Doldur
           </button>
         </div>
       </section>
@@ -542,7 +540,10 @@ const MaterialDetailPage = () => {
   const material = materials.find(m => m.slug === slug);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [readingMode, setReadingMode] = useState<'light' | 'sepia' | 'dark'>('light');
-  const { setIsAppointmentOpen } = useUI();
+  const goToContact = (topic?: string) => {
+    if (topic) sessionStorage.setItem(CONTACT_TOPIC_KEY, topic);
+    navigate('/#iletisim');
+  };
 
   const currentIndex = materials.findIndex(m => m.slug === slug);
   const nextMaterial = materials[(currentIndex + 1) % materials.length];
@@ -749,10 +750,10 @@ const MaterialDetailPage = () => {
                 
                 <button 
                   className="bg-burgundy text-white px-10 py-5 rounded-2xl font-bold flex items-center gap-3 hover:bg-navy-900 transition-all shadow-xl active:scale-95"
-                  onClick={() => setIsAppointmentOpen(true)}
+                  onClick={() => goToContact()}
                 >
                   <MessageSquare size={20} />
-                  Uzmanla Görüş
+                  İletişime Geç
                 </button>
               </div>
             </div>
@@ -855,47 +856,18 @@ const FaqItem = ({ question, answer }: { question: string, answer: string }) => 
 };
 
 export default function App() {
-  const [isAppointmentOpen, setIsAppointmentOpenState] = useState(false);
-  const [defaultService, setDefaultService] = useState("");
-  const [selectedTraining, setSelectedTraining] = useState<Training | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [contactTopic, setContactTopic] = useState("");
 
-  const setIsAppointmentOpen = (open: boolean, service?: string) => {
-    setIsAppointmentOpenState(open);
-    if (service) setDefaultService(service);
-    else if (!open) setDefaultService("");
+  const openContact = (topic?: string) => {
+    if (topic) setContactTopic(topic);
+    document.getElementById("iletisim")?.scrollIntoView({ behavior: "smooth" });
   };
-
-  const [appointmentState, handleAppointmentSubmit] = useForm('mgopjdzv');
-  const [trainingState, handleTrainingSubmit] = useForm('mgopjdzv');
-
-  // Close modals on success
-  useEffect(() => {
-    if (appointmentState.succeeded) {
-      setIsAppointmentOpen(false);
-      alert("Randevu talebiniz başarıyla gönderildi!");
-    }
-  }, [appointmentState.succeeded]);
-
-  useEffect(() => {
-    if (trainingState.succeeded) {
-      setSelectedTraining(null);
-      alert("Eğitim kayıt talebiniz başarıyla gönderildi!");
-    }
-  }, [trainingState.succeeded]);
-
-  const timeSlots = [
-    "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"
-  ];
 
   return (
     <UIContext.Provider value={{
-      isAppointmentOpen, setIsAppointmentOpen,
-      selectedTraining, setSelectedTraining,
-      selectedDate, setSelectedDate,
-      selectedTime, setSelectedTime,
-      defaultService
+      contactTopic,
+      setContactTopic,
+      openContact,
     }}>
       <Router>
         <Routes>
@@ -903,279 +875,6 @@ export default function App() {
           <Route path="/materyal/:slug" element={<MaterialDetailPage />} />
           <Route path="/egitim/:slug" element={<EducationDetailPage />} />
         </Routes>
-
-        {/* Global Modals */}
-        <AnimatePresence>
-          {isAppointmentOpen && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsAppointmentOpen(false)}
-                className="absolute inset-0 bg-navy-900/60 backdrop-blur-sm"
-              />
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="relative w-full max-w-xl bg-white rounded-[40px] shadow-2xl overflow-y-auto max-h-[90vh]"
-              >
-                <div className="p-8 sm:p-12">
-                  <div className="flex justify-between items-start mb-10">
-                    <div>
-                      <h2 className="text-3xl font-bold text-navy-900 mb-2">Randevu Al</h2>
-                      <p className="text-slate-500">Bilgilerinizi bırakın, size en kısa sürede dönüş yapalım.</p>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        setIsAppointmentOpen(false);
-                        setSelectedDate(undefined);
-                        setSelectedTime(null);
-                      }}
-                      className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                    >
-                      <X size={24} className="text-slate-400" />
-                    </button>
-                  </div>
-
-                    <form className="space-y-6" onSubmit={handleAppointmentSubmit}>
-                      <input type="hidden" name="form_type" value="Randevu Talebi" />
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-navy-900 ml-1">Ad Soyad</label>
-                          <div className="relative">
-                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input name="name" required type="text" className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:bg-white transition-all" placeholder="Adınız Soyadınız" />
-                            <ValidationError prefix="Ad Soyad" field="name" errors={appointmentState.errors} />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-bold text-navy-900 ml-1">Telefon</label>
-                          <div className="relative">
-                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input name="phone" required type="tel" className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:bg-white transition-all" placeholder="05xx xxx xx xx" />
-                            <ValidationError prefix="Telefon" field="phone" errors={appointmentState.errors} />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-navy-900 ml-1">E-posta</label>
-                        <div className="relative">
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                          <input name="email" required type="email" className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:bg-white transition-all" placeholder="example@mail.com" />
-                          <ValidationError prefix="Email" field="email" errors={appointmentState.errors} />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-navy-900 ml-1">Hizmet Seçimi</label>
-                        <div className="relative">
-                          <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                          <select 
-                            name="service" 
-                            defaultValue={defaultService}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val.startsWith("Eğitim:")) {
-                                const trainingTitle = val.replace("Eğitim: ", "");
-                                const training = trainings.find(t => t.title === trainingTitle);
-                                if (training) {
-                                  setIsAppointmentOpen(false);
-                                  setSelectedTraining(training);
-                                }
-                              }
-                            }}
-                            className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:bg-white transition-all appearance-none"
-                          >
-                            <option value="">Hizmet Seçiniz</option>
-                            <optgroup label="Danışmanlık Hizmetleri">
-                              <option value="Bireysel Psikolojik Danışmanlık">Bireysel Psikolojik Danışmanlık</option>
-                              <option value="Çocuk ve Ergen Psikolojik Danışmanlık">Çocuk ve Ergen Psikolojik Danışmanlık</option>
-                              <option value="Ebeveyn Danışmanlık">Ebeveyn Danışmanlık</option>
-                              <option value="Eğitim Danışmanlık">Eğitim Danışmanlık</option>
-                            </optgroup>
-                            <optgroup label="Eğitim Programları">
-                              {trainings
-                                .filter(t => t.title !== 'Çocuk ve Ergen Psikolojik Danışmanlık' && t.title !== 'Ebeveyn Danışmanlık')
-                                .map(t => (
-                                <option key={t.title} value={`Eğitim: ${t.title}`}>{t.title}</option>
-                              ))}
-                            </optgroup>
-                          </select>
-                          <ValidationError prefix="Hizmet" field="service" errors={appointmentState.errors} />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-sm font-bold text-navy-900 ml-1">Notunuz</label>
-                        <div className="relative">
-                          <MessageSquare className="absolute left-4 top-4 text-slate-400" size={18} />
-                          <textarea name="message" className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 pl-12 pr-4 h-32 focus:outline-none focus:ring-2 focus:ring-navy-700/20 focus:bg-white transition-all resize-none" placeholder="Mesajınız..."></textarea>
-                          <ValidationError prefix="Mesaj" field="message" errors={appointmentState.errors} />
-                        </div>
-                      </div>
-
-                      <button 
-                        type="submit" 
-                        disabled={appointmentState.submitting} 
-                        className="w-full bg-burgundy text-white py-5 rounded-2xl font-bold text-lg hover:bg-navy-900 transition-all shadow-xl shadow-burgundy/20 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
-                      >
-                        {appointmentState.submitting ? 'Gönderiliyor...' : 'Randevu Talebi Gönder'}
-                      </button>
-                    </form>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {selectedTraining && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setSelectedTraining(null)}
-                className="absolute inset-0 bg-navy-900/40 backdrop-blur-sm"
-              />
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="relative w-full max-w-4xl bg-white rounded-[40px] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col"
-              >
-                <div className="p-8 sm:p-10 overflow-y-auto">
-                  <div className="flex justify-between items-start mb-8">
-                    <div>
-                      <h2 className="text-2xl md:text-3xl font-bold text-navy-900 mb-3">{selectedTraining.title}</h2>
-                      <p className="text-slate-600 leading-relaxed">{selectedTraining.details}</p>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        setSelectedTraining(null);
-                        setSelectedDate(undefined);
-                        setSelectedTime(null);
-                      }}
-                      className="p-2 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0 ml-4"
-                    >
-                      <X size={24} className="text-slate-400" />
-                    </button>
-                  </div>
-
-                  <div className="bg-slate-50 p-6 rounded-3xl mb-8">
-                    <h3 className="text-lg font-bold text-navy-900 mb-4">Hemen Kayıt Olun / Randevu Alın</h3>
-                    <form className="space-y-8" onSubmit={handleTrainingSubmit}>
-                      <input type="hidden" name="form_type" value="Eğitim Kayıt Talebi" />
-                      <input type="hidden" name="training_name" value={selectedTraining.title} />
-                      <input type="hidden" name="selected_date" value={selectedDate ? format(selectedDate, 'dd MMMM yyyy', { locale: tr }) : ''} />
-                      <input type="hidden" name="selected_time" value={selectedTime || ''} />
-
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        {/* Left Side: Calendar & Time */}
-                        <div className="space-y-6">
-                          <div className="bg-white p-6 rounded-3xl border border-slate-200">
-                            <label className="text-sm font-bold text-navy-900 mb-4 block ml-1">Eğitim Tarihi Seçin</label>
-                            <div className="flex justify-center">
-                              <DayPicker
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={setSelectedDate}
-                                locale={tr}
-                                disabled={{ before: addDays(new Date(), 1) }}
-                                modifiersClassNames={{
-                                  selected: 'bg-burgundy text-white rounded-lg',
-                                  today: 'text-burgundy font-bold underline'
-                                }}
-                              />
-                            </div>
-                          </div>
-
-                          {selectedDate && (
-                            <motion.div 
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className="bg-white p-6 rounded-3xl border border-slate-200"
-                            >
-                              <label className="text-sm font-bold text-navy-900 mb-4 block ml-1">Saat Seçin</label>
-                              <div className="grid grid-cols-4 gap-3">
-                                {timeSlots.map((time) => (
-                                  <button
-                                    key={time}
-                                    type="button"
-                                    onClick={() => setSelectedTime(time)}
-                                    className={`py-3 rounded-xl text-sm font-bold transition-all border ${
-                                      selectedTime === time 
-                                        ? 'bg-burgundy text-white border-burgundy shadow-lg shadow-burgundy/20' 
-                                        : 'bg-slate-50 text-slate-600 border-slate-100 hover:border-burgundy/30'
-                                    }`}
-                                  >
-                                    {time}
-                                  </button>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                        </div>
-
-                        {/* Right Side: Personal Info */}
-                        <div className="space-y-6">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div className="space-y-2">
-                              <label className="text-sm font-bold text-navy-900 ml-1">Ad Soyad</label>
-                              <div className="relative">
-                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                <input name="name" required type="text" className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-navy-700/20 transition-all" placeholder="Adınız Soyadınız" />
-                                <ValidationError prefix="Ad Soyad" field="name" errors={trainingState.errors} />
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-sm font-bold text-navy-900 ml-1">Telefon</label>
-                              <div className="relative">
-                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                <input name="phone" required type="tel" className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-navy-700/20 transition-all" placeholder="05xx xxx xx xx" />
-                                <ValidationError prefix="Telefon" field="phone" errors={trainingState.errors} />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="text-sm font-bold text-navy-900 ml-1">E-posta</label>
-                            <div className="relative">
-                              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                              <input name="email" required type="email" className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-navy-700/20 transition-all" placeholder="example@mail.com" />
-                              <ValidationError prefix="Email" field="email" errors={trainingState.errors} />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="text-sm font-bold text-navy-900 ml-1">Notunuz (İsteğe Bağlı)</label>
-                            <div className="relative">
-                              <MessageSquare className="absolute left-4 top-4 text-slate-400" size={18} />
-                              <textarea name="message" className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-11 pr-4 h-24 focus:outline-none focus:ring-2 focus:ring-navy-700/20 transition-all resize-none" placeholder="Eklemek istedikleriniz..."></textarea>
-                              <ValidationError prefix="Mesaj" field="message" errors={trainingState.errors} />
-                            </div>
-                          </div>
-
-                          <button 
-                            type="submit" 
-                            disabled={trainingState.submitting || !selectedDate || !selectedTime} 
-                            className="w-full bg-burgundy text-white py-4 rounded-2xl font-bold text-lg hover:bg-navy-900 transition-all shadow-lg active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
-                          >
-                            {!selectedDate ? 'Tarih Seçin' : !selectedTime ? 'Saat Seçin' : trainingState.submitting ? 'Gönderiliyor...' : 'Kayıt Talebi Gönder'}
-                          </button>
-                        </div>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
       </Router>
     </UIContext.Provider>
   );
@@ -1184,20 +883,24 @@ export default function App() {
 function MainPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileTrainingOpen, setIsMobileTrainingOpen] = useState(false);
-  const { 
-    isAppointmentOpen, setIsAppointmentOpen, 
-    selectedTraining, setSelectedTraining,
-    selectedDate, setSelectedDate,
-    selectedTime, setSelectedTime
-  } = useUI();
+  const { contactTopic, setContactTopic, openContact } = useUI();
   
   const [isTrainingOpen, setIsTrainingOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-
-  const timeSlots = [
-    "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"
-  ];
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const storedTopic = sessionStorage.getItem(CONTACT_TOPIC_KEY);
+    if (storedTopic) {
+      setContactTopic(storedTopic);
+      sessionStorage.removeItem(CONTACT_TOPIC_KEY);
+    }
+    if (window.location.hash === '#iletisim') {
+      setTimeout(() => {
+        document.getElementById('iletisim')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [setContactTopic]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -1239,8 +942,9 @@ function MainPage() {
   useEffect(() => {
     if (contactState.succeeded) {
       alert("Mesajınız başarıyla iletildi!");
+      setContactTopic("");
     }
-  }, [contactState.succeeded]);
+  }, [contactState.succeeded, setContactTopic]);
 
   return (
     <div className="min-h-screen bg-white selection:bg-navy-700 selection:text-white">
@@ -1281,11 +985,11 @@ function MainPage() {
                 <Instagram size={18} className="group-hover:scale-110 transition-transform duration-300" />
               </a>
               <button 
-                onClick={() => setIsAppointmentOpen(true)}
+                onClick={() => openContact()}
                 className="hidden md:flex items-center gap-2 text-burgundy hover:text-navy-900 transition-colors font-serif"
               >
-                <Calendar size={20} />
-                <span>Randevu Al</span>
+                <Mail size={20} />
+                <span>İletişim</span>
               </button>
             </div>
           </div>
@@ -1297,9 +1001,9 @@ function MainPage() {
             <a href="#" className="bg-burgundy text-white px-6 py-3 transition-colors">Ana Sayfa</a>
             <div className="w-px h-5 bg-slate-300 mx-2"></div>
             
-            <button onClick={() => setIsAppointmentOpen(true)} className="text-slate-700 hover:text-burgundy px-4 py-3 transition-colors">
-              Psikolojik Danışmanlık Randevu
-            </button>
+            <a href="#iletisim" className="text-slate-700 hover:text-burgundy px-4 py-3 transition-colors">
+              Psikolojik Danışmanlık
+            </a>
             <div className="w-px h-5 bg-slate-300 mx-2"></div>
             
             {/* Dropdown Menu */}
@@ -1326,7 +1030,7 @@ function MainPage() {
                         <button 
                           key={t.title} 
                           onClick={() => {
-                            setSelectedTraining(t);
+                            openContact(`Eğitim: ${t.title}`);
                             setIsTrainingOpen(false);
                           }}
                           className="p-3 hover:bg-slate-100 rounded-md transition-colors text-left w-full"
@@ -1380,15 +1084,13 @@ function MainPage() {
                   Ana Sayfa
                 </a>
                 
-                <button 
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    setIsAppointmentOpen(true);
-                  }}
-                  className="block w-full text-left text-lg font-bold text-navy-900 hover:text-burgundy transition-colors"
+                <a 
+                  href="#iletisim" 
+                  className="block text-lg font-bold text-navy-900 hover:text-burgundy transition-colors" 
+                  onClick={() => setIsMenuOpen(false)}
                 >
-                  Randevu Al
-                </button>
+                  İletişim Formu
+                </a>
 
                 <div className="space-y-2">
                   <button 
@@ -1411,7 +1113,7 @@ function MainPage() {
                           <button 
                             key={t.title} 
                             onClick={() => {
-                              setSelectedTraining(t);
+                              openContact(`Eğitim: ${t.title}`);
                               setIsMenuOpen(false);
                             }}
                             className="block w-full text-left text-sm text-slate-600 hover:text-burgundy transition-colors py-1"
@@ -1462,16 +1164,14 @@ function MainPage() {
               </div>
 
               <div className="p-8 bg-slate-50 border-t border-slate-100">
-                <button 
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    setIsAppointmentOpen(true);
-                  }}
+                <a 
+                  href="#iletisim"
+                  onClick={() => setIsMenuOpen(false)}
                   className="w-full bg-burgundy text-white py-4 rounded-2xl font-bold text-lg shadow-lg shadow-burgundy/20 flex items-center justify-center gap-2"
                 >
-                  <Calendar size={20} />
-                  <span>Hemen Randevu Al</span>
-                </button>
+                  <Mail size={20} />
+                  <span>İletişim Formu</span>
+                </a>
               </div>
             </motion.div>
           )}
@@ -1523,10 +1223,10 @@ function MainPage() {
                   transition={{ duration: 0.8, delay: 0.4 }}
                 >
                   <button 
-                    onClick={() => setIsAppointmentOpen(true)}
+                    onClick={() => openContact()}
                     className="bg-burgundy text-white px-8 py-5 rounded-2xl font-bold text-lg hover:bg-navy-900 transition-all shadow-xl shadow-burgundy/20 flex items-center gap-3 transform hover:-translate-y-1 font-sans"
                   >
-                    Ücretsiz Ön Görüşme Planla <ArrowRight size={22} />
+                    İletişime Geç <ArrowRight size={22} />
                   </button>
                 </motion.div>
               </div>
@@ -1702,10 +1402,10 @@ function MainPage() {
                     Detayları Keşfet <ArrowRight size={18} />
                   </Link>
                   <button 
-                    onClick={() => setIsAppointmentOpen(true, "Eğitim Danışmanlık")}
+                    onClick={() => openContact("Eğitim Danışmanlık")}
                     className="flex items-center gap-3 text-white font-bold tracking-widest uppercase text-xs opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all duration-700 delay-200 transform translate-y-0 lg:translate-y-4 group-hover:translate-y-0 hover:text-white"
                   >
-                    Randevu Al <Calendar size={18} />
+                    İletişime Geç <ArrowRight size={18} />
                   </button>
                 </div>
               </div>
@@ -1743,10 +1443,10 @@ function MainPage() {
                     İncele <ArrowRight size={18} />
                   </Link>
                   <button 
-                    onClick={() => setIsAppointmentOpen(true, "Bireysel Psikolojik Danışmanlık")}
+                    onClick={() => openContact("Bireysel Psikolojik Danışmanlık")}
                     className="flex items-center gap-3 text-white font-bold tracking-widest uppercase text-xs opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all duration-700 delay-200 transform translate-y-0 lg:translate-y-4 group-hover:translate-y-0 hover:text-white"
                   >
-                    Randevu Al <Calendar size={18} />
+                    İletişime Geç <ArrowRight size={18} />
                   </button>
                 </div>
               </div>
@@ -1781,10 +1481,10 @@ function MainPage() {
                     İncele <ArrowRight size={18} />
                   </Link>
                   <button 
-                    onClick={() => setIsAppointmentOpen(true, "Eğitim Danışmanlık")}
+                    onClick={() => openContact("Eğitim Danışmanlık")}
                     className="flex items-center gap-3 text-white font-bold tracking-widest uppercase text-xs opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all duration-700 delay-200 transform translate-y-0 lg:translate-y-4 group-hover:translate-y-0 hover:text-white"
                   >
-                    Randevu Al <Calendar size={18} />
+                    İletişime Geç <ArrowRight size={18} />
                   </button>
                 </div>
               </div>
@@ -1989,15 +1689,15 @@ function MainPage() {
               answer="Danışanlarımızın tercihine ve coğrafi konumuna göre her iki seçeneği de sunmaktayız. Online seanslarımız da yüz yüze seanslarımız kadar verimli geçmektedir."
             />
             <FaqItem 
-              question="Randevu almak için ne yapmalıyım?" 
-              answer="Web sitemizdeki 'Randevu Al' butonlarına tıklayarak veya iletişim numaralarımızdan bizi arayarak hızlıca randevu oluşturabilirsiniz. Ekibimiz size en kısa sürede dönüş yapacaktır."
+              question="İletişime geçmek için ne yapmalıyım?" 
+              answer="Web sitemizdeki iletişim formunu doldurarak veya iletişim numaramızdan bizi arayarak bize ulaşabilirsiniz. Ekibimiz size en kısa sürede dönüş yapacaktır."
             />
           </div>
           
           <div className="mt-12 text-center">
             <p className="text-slate-600 mb-6">Başka bir sorunuz mu var?</p>
             <button 
-              onClick={() => setIsAppointmentOpen(true)}
+              onClick={() => openContact()}
               className="text-burgundy font-bold hover:text-navy-900 transition-colors flex items-center justify-center gap-2 mx-auto"
             >
               Bizimle İletişime Geçin <ArrowRight size={20} />
@@ -2025,7 +1725,7 @@ function MainPage() {
                   <ul className="space-y-4 text-slate-600 text-lg">
                     <li><a href="#hizmetler" className="hover:text-burgundy transition-colors">Hizmetler</a></li>
                     <li><a href="#materyaller" className="hover:text-burgundy transition-colors">Materyaller</a></li>
-                    <li><a href="#" className="hover:text-burgundy transition-colors">Eğitim Kayıt</a></li>
+                    <li><a href="#iletisim" className="hover:text-burgundy transition-colors">İletişim Formu</a></li>
                   </ul>
                 </div>
                 <div>
@@ -2080,6 +1780,28 @@ function MainPage() {
               <h4 className="text-2xl font-bold mb-8 text-navy-900">Bize Mesaj Gönderin</h4>
               <form className="space-y-6" onSubmit={handleContactSubmit}>
                 <input type="hidden" name="form_type" value="Genel İletişim" />
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-navy-900 ml-1">Konu</label>
+                  <select
+                    name="subject"
+                    value={contactTopic}
+                    onChange={(e) => setContactTopic(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-2xl py-4 px-6 focus:outline-none focus:ring-2 focus:ring-burgundy/50 transition-all text-slate-800"
+                  >
+                    <option value="">Konu seçiniz (isteğe bağlı)</option>
+                    <optgroup label="Danışmanlık Hizmetleri">
+                      <option value="Bireysel Psikolojik Danışmanlık">Bireysel Psikolojik Danışmanlık</option>
+                      <option value="Çocuk ve Ergen Psikolojik Danışmanlık">Çocuk ve Ergen Psikolojik Danışmanlık</option>
+                      <option value="Ebeveyn Danışmanlık">Ebeveyn Danışmanlık</option>
+                      <option value="Eğitim Danışmanlık">Eğitim Danışmanlık</option>
+                    </optgroup>
+                    <optgroup label="Eğitim Programları">
+                      {trainings.map((t) => (
+                        <option key={t.title} value={`Eğitim: ${t.title}`}>{t.title}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-navy-900 ml-1">Ad Soyad</label>
